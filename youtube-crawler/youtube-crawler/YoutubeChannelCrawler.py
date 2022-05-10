@@ -166,7 +166,7 @@ if __name__ == '__main__':
                     while videos_links is not []:
                         A = videos_links[:50]
                         videos_links = videos_links[50:]
-                        get_video_data(A, channel_link, args.api_key, kafka, args.yt_videos_topic)
+                        get_video_data(A, item['username'], channel_link, args.api_key, kafka, args.yt_videos_topic)
                         if A == []:
                             break
                     # save channel data in JSON file

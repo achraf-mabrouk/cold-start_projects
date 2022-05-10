@@ -9,6 +9,8 @@ from pytube import extract
 # ------------------------------------------------------------------------------------------
 
 def save_data(data, file_name):
+    if not os.path.exists('videos'):
+        os.mkdir('videos')
     path = os.path.join('videos/', file_name)
     with open(path + ".json", "w") as f:
         json.dump(data, f, indent=4)
@@ -31,7 +33,7 @@ def get_ids_string(links):
 # YouTube Data API - extracting videos data
 # ------------------------------------------------------------------------------------------
 video_count = 1
-def get_video_data(ids_list, channel_link, api_key, kafka, topic):
+def get_video_data(ids_list, username, channel_link, api_key, kafka, topic):
 
     API_SERVICE_NAME = "youtube"
     API_VERSION = "v3"    
@@ -74,12 +76,17 @@ def get_video_data(ids_list, channel_link, api_key, kafka, topic):
             links_in_description = re.findall("(?P<url>https?://[^\s]+)", description)
             filtred_list = [ x for x in links_in_description if is_product_link(x)]
 
-            video_data = {                    
+            userInfo = {
+                'kit_username' :username,
+                'hippo_username': username,
+                'channelId' : channel_id,
+                'channelTitle' : channel_name,
+                'channelURL' : channel_link,
+            }
+            video_data = {
+                    'userInfo'  : userInfo,                 
                     'video_id' : item['id'],
                     'title' : title,
-                    'channelId' : channel_id,
-                    'channelTitle' : channel_name,
-                    'channelURL' : channel_link,
                     'description' : description,
                     'publishedAt' : publishedAt,
                     'likeCount' : likeCount,
@@ -89,6 +96,7 @@ def get_video_data(ids_list, channel_link, api_key, kafka, topic):
                 }
             
             kafka.message_writer(topic, video_data)
+            # save_data(video_data, 'video' )
             print(f"video number {video_count} : {title}")            
             video_count += 1
             
