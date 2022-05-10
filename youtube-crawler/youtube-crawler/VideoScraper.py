@@ -89,8 +89,7 @@ def get_video_data(ids_list, channel_link, api_key, kafka, topic):
                 }
             
             kafka.message_writer(topic, video_data)
-            print(f"video number {video_count} : {title}")
-            save_data(video_data, f"video {video_count}")
+            print(f"video number {video_count} : {title}")            
             video_count += 1
             
     except HTTPError as e:
