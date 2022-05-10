@@ -31,7 +31,7 @@ def get_ids_string(links):
 # YouTube Data API - extracting videos data
 # ------------------------------------------------------------------------------------------
 video_count = 1
-def get_video_data(ids_list, api_key, kafka, topic):
+def get_video_data(ids_list, channel_link, api_key, kafka, topic):
 
     API_SERVICE_NAME = "youtube"
     API_VERSION = "v3"    
@@ -53,6 +53,7 @@ def get_video_data(ids_list, api_key, kafka, topic):
             snippet = item['snippet']
             statistics = item['statistics']
             # Extracting the needed data
+            channel_id = snippet['channelId']
             channel_name = snippet['channelTitle']
             title = snippet['title']
             description = snippet['description']
@@ -76,7 +77,9 @@ def get_video_data(ids_list, api_key, kafka, topic):
             video_data = {                    
                     'video_id' : item['id'],
                     'title' : title,
+                    'channelId' : channel_id,
                     'channelTitle' : channel_name,
+                    'channelURL' : channel_link,
                     'description' : description,
                     'publishedAt' : publishedAt,
                     'likeCount' : likeCount,
@@ -87,6 +90,7 @@ def get_video_data(ids_list, api_key, kafka, topic):
             
             kafka.message_writer(topic, video_data)
             print(f"video number {video_count} : {title}")
+            save_data(video_data, f"video {video_count}")
             video_count += 1
             
     except HTTPError as e:
