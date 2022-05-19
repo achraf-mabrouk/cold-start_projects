@@ -1,8 +1,10 @@
+from copy import deepcopy
 import scrapy
 import json
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 import argparse
+import copy
 
 parser = argparse.ArgumentParser(description="YouTube videos data")
 parser.add_argument("-i", "--input_path", help="YouTube data input file", required=True)
@@ -40,7 +42,8 @@ class ResolverSpider(scrapy.Spider):
             # add 'resolved_urls' key:value pair to the record                      
             record['resolved_urls'] = []
             try:
-                urls = iter(record['links_in_description'])
+                urls = copy.deepcopy(record['links_in_description'])
+                urls = iter(urls)
                 yield scrapy.Request(next(urls), 
                                     callback=self.parse, 
                                     meta={'record' : record,
@@ -71,22 +74,24 @@ class ResolverSpider(scrapy.Spider):
                                 'urls' : urls },
                                 errback=self.errback_handler
                                 ) 
-        except StopIteration:            
+        except StopIteration:
+            print(record)           
             dump_jsonl(record, args.output_path, append=True)
             # yield record
         
-    def errback_handler(self, response, failure):
-        record = response.meta['record']
-        urls = response.meta['urls']
-        record['resolved_urls'].append(None)
+    def errback_handler(self, failure):
+        record = failure.request.meta['record']
+        urls = failure.request.meta['urls']
+        
         try:
-            yield response.follow(next(urls), 
+            yield scrapy.Request(next(urls), 
                                 callback=self.parse,  
                                 meta={'record' : record,
                                 'urls' : urls },
                                 errback=self.errback_handler
                                 )
-        except StopIteration:            
+        except StopIteration:
+            print(record)          
             dump_jsonl(record, args.output_path, append=True) 
             # yield record
     
