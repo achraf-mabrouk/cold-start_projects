@@ -1,10 +1,9 @@
-from copy import deepcopy
 import scrapy
 import json
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 import argparse
-import copy
+import re
 
 parser = argparse.ArgumentParser(description="YouTube videos data")
 parser.add_argument("-i", "--input_path", help="YouTube data input file", required=True)
@@ -42,7 +41,8 @@ class ResolverSpider(scrapy.Spider):
             # add 'resolved_urls' key:value pair to the record                      
             record['resolved_urls'] = []
             try:
-                urls = copy.deepcopy(record['links_in_description'])
+                # fixing invalid urls that contain invalid characters
+                urls = [re.sub('[^a-zA-Z0-9]+$','',url) for url in record['links_in_description']]
                 urls = iter(urls)
                 yield scrapy.Request(next(urls), 
                                     callback=self.parse, 
@@ -54,6 +54,7 @@ class ResolverSpider(scrapy.Spider):
             # if links_in_description is null                                         
             except StopIteration:
                 record['resolved_urls'] = None
+                print(record)
                 dump_jsonl(record, args.output_path, append=True)
                 # yield record
        
@@ -66,9 +67,8 @@ class ResolverSpider(scrapy.Spider):
             canonical_url = response.url
         
         record['resolved_urls'].append(canonical_url)
-        try:
-            url = next(urls)
-            yield response.follow(url, 
+        try:            
+            yield response.follow(next(urls), 
                                 callback=self.parse,  
                                 meta={'record' : record,
                                 'urls' : urls },
@@ -98,12 +98,12 @@ class ResolverSpider(scrapy.Spider):
 
 
 settings = get_project_settings()
-# # settings={
-# #     "FEEDS": {
-# #         "items.json": {"format": "json"},
+# settings={
+#     "FEEDS": {
+#         "items1.json": {"format": "json"},
 
-# #     },
-# # }
+#     },
+# }
 process = CrawlerProcess(settings)
 
 process.crawl(ResolverSpider)
